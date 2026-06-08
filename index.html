@@ -228,6 +228,21 @@ footer .f-gold{color:var(--gold2);}
   .img-pair img{height:120px;}
 }
 
+
+/* ── IMAGE ZOOM HINT ── */
+.img-zoom-wrap { position: relative; display: block; cursor: zoom-in; }
+.img-zoom-wrap::after {
+  content: '🔍 点击查看大图';
+  position: absolute;
+  bottom: 10px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.55);
+  color: #fff; font-size: 12px; padding: 4px 12px;
+  border-radius: 20px; white-space: nowrap;
+  opacity: 0; transition: opacity 0.2s;
+  pointer-events: none;
+}
+.img-zoom-wrap:hover::after { opacity: 1; }
+
 /* ── LAZY + LIGHTBOX ── */
 .lazy-img { transition: opacity 0.35s ease; }
 .lazy-img[src*="gif"] { opacity: 0.1; background: #e8f0f5; }
@@ -888,6 +903,31 @@ img.lazy-img:not([src*="gif"]){ cursor:zoom-in; }
     var s=img.src; if(!s||s===ph||img.getAttribute('data-src'))return;
     open(s);
   });
+  
+  // Add zoom hint wrapper to all loaded images
+  document.addEventListener('click', function(){}, false); // already handled
+  // Wrap images in zoom containers after lazy load
+  var origLoad = Image.prototype; // not modifying prototype
+  // Instead patch via MutationObserver on lazy-img src changes
+  var mo = new MutationObserver(function(muts) {
+    muts.forEach(function(m) {
+      if (m.type === 'attributes' && m.attributeName === 'src') {
+        var img = m.target;
+        if (img.classList.contains('lazy-img') && !img.getAttribute('data-src')) {
+          if (img.parentNode && !img.parentNode.classList.contains('img-zoom-wrap')) {
+            var wrap = document.createElement('div');
+            wrap.className = 'img-zoom-wrap';
+            img.parentNode.insertBefore(wrap, img);
+            wrap.appendChild(img);
+          }
+        }
+      }
+    });
+  });
+  document.querySelectorAll('img.lazy-img').forEach(function(img) {
+    mo.observe(img, { attributes: true });
+  });
+
   lc.addEventListener('click',close);
   ov.addEventListener('click',function(e){if(e.target===ov)close();});
   document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
